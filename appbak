@@ -1,0 +1,91 @@
+import { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView, Text, StyleSheet, Button } from "react-native";
+import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-expo";
+import * as Linking from 'expo-linking';
+import { NavigationContainer } from '@react-navigation/native';
+
+const linking = {
+  // Prefixes accepted by the navigation container, should match the added schemes
+  prefixes: ["myapp://"],
+  // Route config to map uri paths to screens
+  config: {
+    // Initial route name to be added to the stack before any further navigation,
+    // should match one of the available screens
+    initialRouteName: "Home",
+    screens: {
+      // myapp://home -> HomeScreen
+      Home: "home",
+      // myapp://details/1 -> DetailsScreen with param id: 1
+      Details: "details/:id",
+    },
+  },
+};
+
+export default function App() {
+  const linking = {
+    prefixes: [prefix],
+  };
+
+  useEffect(() => {
+    const handleDeepLink = ({ url }) => {
+      const route = url.replace(/.*?:\/\//g, '');
+      const routeName = route.split('/')[0];
+
+      if (routeName === 'profile') {
+        const username = route.split('/')[1];
+        navigation.navigate('Profile', { username });
+      }
+    };
+
+    Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      Linking.removeEventListener('url', handleDeepLink);
+    };
+  }, []);
+
+  return (
+    <ClerkProvider
+      publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      afterSignUpUrl='myapp://signup'
+      afterSignInUrl='myapp://signin'>
+      <NavigationContainer linking={linking} fallback={<Text>Loading...</Text>}>
+        <Stack.Navigator initialRouteName="Home">
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Details" component={DetailsScreen} />
+        </Stack.Navigator>
+        <SignedIn>
+          <Text>You are Signed in</Text>
+          </SignedIn>
+        <SignedOut>
+          <Text>You are Signed out</Text>
+          <Button
+            title="Sign in"
+            onPress={() => Linking.openURL('https://new-slug-3.accounts.dev/sign-in')} />
+          <Button
+            title="Open scheme"
+            onPress={() => Linking.openURL('myapp://')} />
+        </SignedOut>
+      </NavigationContainer>
+      {/* <SafeAreaView style={styles.container}>
+
+      </SafeAreaView> */}
+    </ClerkProvider>
+  );
+}
+
+
+// {/* <View style={styles.container}>
+//   <Text>Open up App.js to start working on your app!</Text>
+//   <StatusBar style="auto" />
+// </View> */}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
